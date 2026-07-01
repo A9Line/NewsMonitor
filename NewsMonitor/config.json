@@ -20,5 +20,22 @@
     "Token": "8983406390:AAGxoHKKCrM8gHm8PxXuZrCJ9wYBpwRctBs",
     "ChatId": "773760736"
   },
-  "Sources": [ "habr", "cnews", "ixbt", "energonews" ]
+  "Sources": [
+    {
+      "Name": "Habr",
+      "Url": "https://habr.com/ru/rss/all/all/?fl=ru"
+    },
+    {
+      "Name": "CNews",
+      "Url": "https://www.cnews.ru/inc/rss/news.xml"
+    },
+    {
+      "Name": "iXBT",
+      "Url": "https://www.ixbt.com/export/news.rss"
+    },
+    {
+      "Name": "ЭнергоНьюс",
+      "Url": "https://energo-news.ru/feed/"
+    }
+  ]
 }

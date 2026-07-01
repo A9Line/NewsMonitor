@@ -13,15 +13,6 @@ namespace NewsMonitor
 {
     internal class Program
     {
-        private static readonly Dictionary<string, Func<INewsCollector>> CollectorFactory =
-            new Dictionary<string, Func<INewsCollector>>
-            {
-                ["habr"] = () => new HabrCollector(),
-                ["cnews"] = () => new CNewsCollector(),
-                ["ixbt"] = () => new IxbtCollector(),
-                ["energonews"] = () => new EnergoNewsCollector(),
-            };
-
         static async Task Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -29,28 +20,23 @@ namespace NewsMonitor
             string configText = File.ReadAllText("config.json");
             AppConfig config = JsonConvert.DeserializeObject<AppConfig>(configText)!;
 
-            // Собираем и фильтруем новости отдельно по каждому источнику,
-            // чтобы один "болтливый" источник не вытеснял остальные.
+            // Источники берём прямо из конфига — код про них ничего не знает
             var perSource = new List<List<NewsItem>>();
-            foreach (var sourceName in config.Sources)
+            foreach (var src in config.Sources)
             {
-                if (CollectorFactory.TryGetValue(sourceName.ToLower(), out var make))
-                {
-                    INewsCollector collector = make();
-                    Console.WriteLine($"Собираю новости: {collector.SourceName}...");
-                    var news = await collector.FetchAsync();
-                    Console.WriteLine($"  получено: {news.Count}");
+                INewsCollector collector = new RssCollector(src.Name, src.Url);
+                Console.WriteLine($"Собираю новости: {collector.SourceName}...");
+                var news = await collector.FetchAsync();
+                Console.WriteLine($"  получено: {news.Count}");
 
-                    var filtered = NewsFilter.FilterByTopics(news, config.Topics)
-                        .OrderByDescending(n => n.Published ?? DateTime.MinValue)
-                        .ToList();
-                    Console.WriteLine($"  после фильтра: {filtered.Count}");
-                    perSource.Add(filtered);
-                }
+                var filtered = NewsFilter.FilterByTopics(news, config.Topics)
+                    .OrderByDescending(n => n.Published ?? DateTime.MinValue)
+                    .ToList();
+                Console.WriteLine($"  после фильтра: {filtered.Count}");
+                perSource.Add(filtered);
             }
 
-            // Равномерный отбор: по очереди берём по одной новости с каждого
-            // источника, пока не наберём лимит max_news_per_day.
+            // Равномерный отбор по источникам до лимита
             var limited = new List<NewsItem>();
             int index = 0;
             while (limited.Count < config.MaxNewsPerDay &&
